@@ -1,6 +1,6 @@
-# Skills de IA — MedSafe Brasil
+# Skills da IA — MedSafe Brasil
 
-Sete skills autorais para o [Claude Code](https://claude.com/claude-code), com
+skills autorais da equipe de IA para o Claude Code, com
 foco em pesquisa científica, machine learning, visão computacional, NLP clínico
 em português e segurança de aplicações.
 
