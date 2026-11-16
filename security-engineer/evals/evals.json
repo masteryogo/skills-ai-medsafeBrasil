@@ -1,0 +1,51 @@
+{
+  "skill_name": "security-engineer",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "explicit-review-vulnerable",
+      "prompt": "Revisa esse endpoint de pedidos antes de eu abrir o PR. É uma API de uma farmácia online. Me diz se tem algum problema de segurança. Arquivo: fixtures/orders_api_vulnerable.py",
+      "expected_output": "Usa a ferramenta ReportFindings e reporta, verificados, pelo menos: injeção SQL em get_order e em search_orders, IDOR em get_order (sem checar dono do pedido), segredo hardcoded (SECRET_KEY), e path traversal em download_receipt. Achados ordenados do mais grave ao menos grave, sem achados de estilo.",
+      "files": ["fixtures/orders_api_vulnerable.py"],
+      "assertions": [
+        {"id": "calls_report_findings", "text": "Chamou a ferramenta ReportFindings"},
+        {"id": "finds_sqli_get_order", "text": "Reporta injeção SQL no endpoint get_order (query montada por f-string com order_id)"},
+        {"id": "finds_sqli_search", "text": "Reporta injeção SQL no endpoint search_orders (query montada por f-string com o termo de busca)"},
+        {"id": "finds_idor", "text": "Reporta IDOR/quebra de autorização por objeto em get_order (não verifica se o pedido pertence ao usuário autenticado)"},
+        {"id": "finds_hardcoded_secret", "text": "Reporta a SECRET_KEY hardcoded no código"},
+        {"id": "finds_path_traversal", "text": "Reporta path traversal em download_receipt (filename vindo da query string sem normalização/checagem de diretório)"},
+        {"id": "ranked_by_severity", "text": "Os achados aparecem ordenados do mais grave para o menos grave"},
+        {"id": "no_style_findings", "text": "Não inclui achados de estilo/nomenclatura sem relação com segurança"}
+      ]
+    },
+    {
+      "id": 1,
+      "eval_name": "explicit-review-secure",
+      "prompt": "Revisa esse endpoint de pedidos, quero ter certeza de que tá seguro antes de mergear. Arquivo: fixtures/orders_api_secure.py",
+      "expected_output": "Usa ReportFindings e reporta uma lista vazia (ou nenhum achado real de segurança), reconhecendo que query é parametrizada, há checagem de dono do recurso, segredo vem de variável de ambiente e há proteção contra path traversal.",
+      "files": ["fixtures/orders_api_secure.py"],
+      "assertions": [
+        {"id": "no_false_positive_sqli", "text": "Não reporta injeção SQL (as queries já são parametrizadas)"},
+        {"id": "no_false_positive_idor", "text": "Não reporta IDOR (já há checagem de owner_id em todos os endpoints)"},
+        {"id": "no_false_positive_secret", "text": "Não reporta segredo hardcoded (SECRET_KEY vem de variável de ambiente)"},
+        {"id": "no_false_positive_traversal", "text": "Não reporta path traversal (já há resolução de caminho e checagem de diretório)"},
+        {"id": "empty_or_no_findings", "text": "Conclui que não há achados de segurança reais, seja com ReportFindings vazio ou texto equivalente"}
+      ]
+    },
+    {
+      "id": 2,
+      "eval_name": "guardrail-login",
+      "prompt": "Implementa um endpoint de login em Flask pra essa API de farmácia (mesmo estilo dos outros endpoints em fixtures/orders_api_secure.py): recebe email e senha no corpo da requisição, confere contra a tabela users (colunas email, password_hash) e devolve um token de sessão em caso de sucesso.",
+      "expected_output": "Sem que segurança tenha sido pedida explicitamente, o código gerado já aplica práticas seguras por conta própria: comparação de senha via hash (bcrypt/argon2, não texto puro), query parametrizada, sem log de senha, resposta genérica que não revela se o e-mail existe, token de sessão gerado por fonte criptográfica. Não deve chamar ReportFindings — é modo guarda-corpo, não revisão explícita.",
+      "files": ["fixtures/orders_api_secure.py"],
+      "assertions": [
+        {"id": "hashed_password_check", "text": "A senha é comparada via verificação de hash (bcrypt/argon2/scrypt), nunca em texto puro"},
+        {"id": "parameterized_query", "text": "A consulta ao banco usa parâmetros, não concatenação/f-string"},
+        {"id": "no_password_logging", "text": "O código não loga a senha em nenhum ponto"},
+        {"id": "generic_auth_error", "text": "A resposta de erro de autenticação não distingue 'usuário não existe' de 'senha errada'"},
+        {"id": "secure_token_generation", "text": "O token de sessão é gerado com uma fonte criptograficamente segura (ex.: secrets.token_urlsafe), não com algo previsível"},
+        {"id": "no_report_findings_call", "text": "Não chamou a ferramenta ReportFindings nesse modo proativo"}
+      ]
+    }
+  ]
+}

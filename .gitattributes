@@ -1,0 +1,11 @@
+# Normaliza quebras de linha: LF no repositorio, nativo no checkout.
+# Sem isso, editar no Windows gera diffs de arquivo inteiro.
+* text=auto eol=lf
+
+# Scripts precisam de LF para rodar em Linux/macOS.
+*.py text eol=lf
+
+# Nao tratar binarios como texto.
+*.png binary
+*.jpg binary
+*.pdf binary
